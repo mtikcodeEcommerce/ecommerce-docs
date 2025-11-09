@@ -111,7 +111,7 @@ Tải PostgreSQL JDBC driver và đặt vào `logstash/drivers/`:
 ```bash
 mkdir -p logstash/drivers
 cd logstash/drivers
-wget https://jdbc.postgresql.org/download/postgresql-42.7.1.jar
+wget https://jdbc.postgresql.org/download/postgresql-42.6.0.jar
 ```
 
 **File `logstash/pipeline/postgres.conf`:**
@@ -119,11 +119,11 @@ wget https://jdbc.postgresql.org/download/postgresql-42.7.1.jar
 ```conf
 input {
   jdbc {
-    jdbc_driver_library => "/usr/share/logstash/drivers/postgresql-42.7.1.jar"
+    jdbc_driver_library => "/usr/share/logstash/drivers/postgresql-42.6.0.jar"
     jdbc_driver_class => "org.postgresql.Driver"
-    jdbc_connection_string => "jdbc:postgresql://host.docker.internal:5432/ecommerce_db"
-    jdbc_user => "postgres"
-    jdbc_password => "your_password"
+    jdbc_connection_string => "jdbc:postgresql://{host}:{port}/postgres"
+    jdbc_user => "username"
+    jdbc_password => "password"
     
     # Query để lấy dữ liệu products (loại bỏ soft-deleted)
     statement => "
@@ -191,6 +191,7 @@ output {
     template => "/usr/share/logstash/templates/products-template.json"
     template_name => "products"
     template_overwrite => true
+    template_api => "composable"
   }
   
   stdout { codec => rubydebug }
@@ -203,38 +204,42 @@ Tạo file template để định nghĩa mapping cho Elasticsearch:
 
 ```json
 {
-  "index_patterns": ["products"],
-  "settings": {
-    "number_of_shards": 1,
-    "number_of_replicas": 0
-  },
-  "mappings": {
-    "properties": {
-      "id": { "type": "integer" },
-      "category_id": { "type": "integer" },
-      "name": { 
-        "type": "text",
-        "fields": {
-          "keyword": { "type": "keyword" }
-        }
-      },
-      "slug": { "type": "keyword" },
-      "short_description": { "type": "text" },
-      "description": { "type": "text" },
-      "price": { "type": "float" },
-      "compare_at_price": { "type": "float" },
-      "stock_quantity": { "type": "integer" },
-      "stock_status": { "type": "keyword" },
-      "sku": { "type": "keyword" },
-      "is_active": { "type": "boolean" },
-      "is_featured": { "type": "boolean" },
-      "view_count": { "type": "integer" },
-      "rating_average": { "type": "float" },
-      "review_count": { "type": "integer" },
-      "created_at": { "type": "date" },
-      "updated_at": { "type": "date" }
+  "index_patterns": ["products*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "properties": {
+        "id": { "type": "integer" },
+        "category_id": { "type": "integer" },
+        "name": { 
+          "type": "text",
+          "fields": {
+            "keyword": { "type": "keyword" }
+          }
+        },
+        "slug": { "type": "keyword" },
+        "short_description": { "type": "text" },
+        "description": { "type": "text" },
+        "price": { "type": "float" },
+        "compare_at_price": { "type": "float" },
+        "stock_quantity": { "type": "integer" },
+        "stock_status": { "type": "keyword" },
+        "sku": { "type": "keyword" },
+        "is_active": { "type": "boolean" },
+        "is_featured": { "type": "boolean" },
+        "view_count": { "type": "integer" },
+        "rating_average": { "type": "float" },
+        "review_count": { "type": "integer" },
+        "created_at": { "type": "date" },
+        "updated_at": { "type": "date" }
+      }
     }
-  }
+  },
+  "priority": 200,
+  "version": 1
 }
 ```
 
